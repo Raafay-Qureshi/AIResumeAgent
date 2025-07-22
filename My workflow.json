@@ -1,0 +1,839 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        140
+      ],
+      "id": "9f057df6-32ad-4b2b-8749-08bb12d54109",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-pro-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        360
+      ],
+      "id": "d8dfdc2a-e984-4dec-b430-3f9c1a2332d8",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "SNYRHUeyNyx0g8XI",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a specialized LaTeX Resume Transformation Bot. Your single task is to modify a given LaTeX resume to perfectly align with a target job description, maximizing its ATS score by following a precise set of rules.\n\nExecution Plan:\n\nAnalyze Job Description: First, silently analyze the Job Description provided below. Identify the most critical ATS keywords and phrases.\n\nAnalyze Resume: Second, silently review the original Resume LaTeX. Understand its structure and content to prepare for modifications.\n\nDynamic One-Page Optimization: Your goal is to create a dense, detailed, one-page resume that uses as much of the page as possible without spilling over. First, enrich the content. Then, if the length is not optimal, adjust it using the following rules.\n\nA. If Resume is Too Long (Content Trimming):\n\nIf the expanded content exceeds one page, you MUST apply these trimming rules in order until it fits:\n\nStep 1: Condense the 'Product Inventory Discord Bot' and 'Gaia' projects to 1-2 bullet points each.\n\nStep 2: Ensure the 'NewsNest' project has a maximum of three bullet points.\n\nStep 3: Ensure the 'Apple Inc.' experience has a maximum of five bullet points.\n\nB. If Resume is Too Short (Content Expansion):\n\nIf the final resume has significant empty space at the bottom, you MUST expand the content by applying these rules in order until the page is full:\n\nStep 1: Ensure the 'AI-Powered Resume Agent' project has at least four detailed bullet points.\n\nStep 2: Ensure the 'NewsNest' project has at least three detailed bullet points.\n\nStep 3: Expand on a bullet point in the 'Apple Inc.' experience, adding more specific technical detail or metrics.\n\nOptimize Experience Section:\n\nConcisely rewrite the bullet points under \"Experience\" to naturally integrate keywords. Your goal is to create a more detailed, impactful, yet succinct description.\n\nDo NOT invent new job roles or employers.\n\nOptimize Projects Section:\n\nRewrite the project bullet points to include relevant keywords while concisely adding technical substance about the project's purpose and outcome.\n\nOptimize Skills Section:\n\nReview the skills keywords. In the \"Technical Skills\" section, re-order your existing skills to prioritize those mentioned in the job description. Ensure phrasing matches the job description (e.g., change \"JS\" to \"JavaScript\"). Do NOT add any skill not present in the original resume or inferable from your experience.\n\nFinal Syntax & Rules Check:\n\nBefore outputting, double-check that the entire text is 100% valid LaTeX code.\n\nConfirm you have NOT added new sections, projects, or experience entries.\n\nConfirm you have NOT wrapped the code in markdown fences.\n\nStrict Output Mandate:\n\nLaTeX Code Only: The output MUST be the raw, complete, and valid LaTeX code for the modified resume.\n\nNo Explanations: Do NOT include ANY text, summaries, comments, or conversational phrases.\n\nNo Markdown: Do NOT wrap the code in markdown fences (e.g., ```latex).\n\nPreserve Formatting: Maintain the original LaTeX structure and commands. Do not introduce new bolding, change fonts, alter the header/links, or change any \\vspace values.\n\nNo Extra Blank Lines: Do not add extra blank lines or \\\\ commands between items or sections beyond what is in the original template.\n\n---\n**Resume LaTeX:**\n\n{{ $json.resume }}\n\n---\n**Job Description:**\n\n{{ $json['Company Name'] }}\n{{ $json['Position Title'] }}\n{{ $json.Location }}\n{{ $json.formattedJobDescription }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        900,
+        160
+      ],
+      "id": "33b5787e-317a-4d3f-a27c-5dbd13627f5c",
+      "name": "Resume Builder"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1600,
+        160
+      ],
+      "id": "f1415116-c3c7-4eea-bf9e-00b2ebc341a6",
+      "name": "Wait",
+      "webhookId": "939efb26-2edc-4f25-a144-86e7623ace36"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloudconvert.com/v2/jobs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer cloudconvert_key"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"tasks\": {\n      \"import\": {\n        \"operation\": \"import/raw\",\n        \"file\": \"{{ $json.formattedText}}\",\n        \"filename\": \"resume.tex\"\n      },\n      \"convert\": {\n        \"operation\": \"convert\",\n        \"input\": [\n          \"import\"\n        ],\n        \"input_format\": \"tex\",\n        \"output_format\": \"pdf\",\n        \"filename\": \"resume.pdf\"\n      },\n      \"export\": {\n        \"operation\": \"export/url\",\n        \"input\": [\n          \"convert\"\n        ],\n        \"inline\": true,\n        \"archive_multiple_files\": false\n      }\n    },\n    \"tag\": \"jobbuilder\"\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        160
+      ],
+      "id": "32e183be-531b-4a9f-8059-e55e5e868a03",
+      "name": "CreateResume"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloudconvert.com/v2/jobs/{{ $json.data.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer cloudconvert_key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        160
+      ],
+      "id": "689b81a7-b655-461c-9ca8-f058b178dd49",
+      "name": "ExportResume"
+    },
+    {
+      "parameters": {
+        "content": "# Resume",
+        "height": 460,
+        "width": 1860
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        60,
+        60
+      ],
+      "id": "a8aff0c4-392b-4ad3-b164-fd456e5db9c7",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"date\": \"Month Day, Year\",\n  \"recipient_info\": {\n    \"team_name\": \"BMO Campus Recruitment Team\",\n    \"address\": \"address (if included), city, province\"\n  },\n  \"salutation\": \"Dear BMO Campus Recruitment Team,\",\n  \"body\": [\n    \"I am writing with great enthusiasm to apply for the Co-op/Intern Student position at BMO, as advertised. As a Computer Science student at Wilfrid Laurier University with a strong foundation in software development, I am eager to contribute my skills to BMO's innovative projects and learn from industry leaders within your esteemed campus program.\",\n    \"My experience as a Software Developer Intern at Apple Inc. thoroughly prepared me for the software development lifecycle, where I was responsible for translating user requirements into a functional, data-driven iOS application. Using Swift, Xcode, and CoreData, I architected the application, managed large datasets efficiently, and designed an intuitive UI/UX with SwiftUI that garnered positive feedback. This role, along with developing 'NewsNest'—a news aggregation and classification system using Python, Node.js, TensorFlow, and MongoDB—highlights my capability in programming, developing, testing, and implementing new software programs from conception to deployment.\",\n    \"My proficiency in algorithms and data structures has been practically applied in projects such as 'Gaia,' an environmental impact simulator developed in Python, and reinforced through my experience as a Coding Tutor, where I instructed students in Python, algorithmic thinking, and problem-solving. I am technically skilled in a range of languages including Python, Swift, and JavaScript, and frameworks like TensorFlow and Node.js, complemented by experience with developer tools such as Git and MongoDB. These experiences have not only sharpened my analytical and problem-solving capabilities but also my verbal and written communication and teamwork skills, particularly evident during the 'Gaia' hackathon. I am an adaptable, agile learner, keen to explore and evaluate new technologies, and I am confident in my ability to quickly contribute to system design, thorough testing, and effective troubleshooting, all while upholding BMO’s high standards for code quality and security.\",\n    \"The opportunity to grow within BMO’s campus program is particularly appealing. I am excited to apply my current abilities and further develop my expertise, contributing meaningfully to your team. I am confident that my proactive approach, technical skills, and strong desire to learn make me a suitable candidate for this role and I am eager to discuss how my background can benefit BMO.\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2400,
+        340
+      ],
+      "id": "5e003960-ccb2-46f8-9d75-6957a19cab89",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This code reads data from a specific previous node, formats it,\n// and then returns a new object, avoiding any reference to `$item` or `$json`.\n\n// --- CONFIGURATION ---\n// IMPORTANT: Replace 'GetJobData' with the actual name of the node\n// that contains your job description.\nconst inputNode = $('Get Job Data');\n\n// Get the raw job description from that specific node's output.\nconst rawJobDesc = inputNode.item.json['Job Description'];\n\n// Create a new object to hold our output data.\nconst outputData = {};\n\n// If the job description field was found, format it.\nif (rawJobDesc) {\n  // Step 1: Escape all backslashes\n  let formattedText = rawJobDesc.replace(/\\\\/g, '\\\\\\\\');\n\n  // Step 2: Escape all double quotes\n  formattedText = formattedText.replace(/\"/g, '\\\\\"');\n\n  // Step 3: Replace all newlines with \\n\n  formattedText = formattedText.replace(/\\n/g, '\\\\n');\n\n  // Add the sanitized description to our output object.\n  outputData.formattedJobDescription = formattedText;\n}\n\n// Return the new object. n8n will use this as the JSON data for the output item.\nreturn outputData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        220
+      ],
+      "id": "749ecea7-c179-4058-8bfe-db7805768fd3",
+      "name": "format job desc"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputNodeName = 'Resume Builder';\n\n// 2. The name of the JSON field that holds the text.\nconst inputFieldName = 'output';\n// --- END OF CONFIGURATION ---\n\n\n// Get the data from the specified node's output.\nconst inputNode = $(inputNodeName);\n\n// Create a new object to hold our output.\nconst outputData = {};\n\n// Safely access the raw text from the input node.\n// This structure prevents errors if the node or data doesn't exist.\nconst rawText = inputNode && inputNode.item && inputNode.item.json ? inputNode.item.json[inputFieldName] : null;\n\n\n// Check if the raw text was actually found before trying to format it.\nif (rawText && typeof rawText === 'string') {\n  // The order of these replacements is important.\n\n  // Step 1: Replace every single backslash with a double backslash.\n  let formattedText = rawText.replace(/\\\\/g, '\\\\\\\\');\n\n  // Step 2: Replace every double quote with an escaped double quote.\n  formattedText = formattedText.replace(/\"/g, '\\\\\"');\n\n  // Step 3: Replace every newline character with the string literal \"\\\\n\".\n  formattedText = formattedText.replace(/\\n/g, '\\\\n');\n\n  // Add the fully cleaned and formatted string to our output object.\n  outputData.formattedText = formattedText;\n\n} else {\n  // If the input was not found or wasn't a string, return an error for easier debugging.\n  outputData.error = `Field '${inputFieldName}' not found or not a string in node '${inputNodeName}'.`;\n  outputData.formattedText = \"\";\n}\n\n// Return the new object. n8n will use this as the JSON data for this node's output.\nreturn outputData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        160
+      ],
+      "id": "84a7b284-0699-476c-be91-873e11e84e32",
+      "name": "formatted resume"
+    },
+    {
+      "parameters": {
+        "jsCode": "// This code gets the current date and adds it to the n8n item.\n\nconst today = new Date();\n\n// If you want the date formatted as YYYY-MM-DD for your timezone\n// you can use toLocaleDateString with the 'en-CA' locale.\nconst localDateString = today.toLocaleDateString('en-CA', {\n  timeZone: 'America/Toronto' // EDT/EST timezone\n});\n\n\n// The Code node must return an object.\n// Each key in this object will be a new field in your n8n item.\nreturn {\n  json: {\n    date: localDateString\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2060,
+        160
+      ],
+      "id": "9607e7e1-6c5d-45e0-9cb9-9809e54dca95",
+      "name": "get date"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "https://docs.google.com/document/d/1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc/edit?tab=t.0",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "date",
+              "replaceText": "={{ $json.output.date }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "address",
+              "replaceText": "={{ $json.output.recipient_info.address }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "salutation",
+              "replaceText": "={{ $json.output.salutation }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "body0",
+              "replaceText": "={{ $json.output.body[0] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "body1",
+              "replaceText": "={{ $json.output.body[1] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "body2",
+              "replaceText": "={{ $json.output.body[2] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "body3",
+              "replaceText": "={{ $json.output.body[3] }}"
+            },
+            {
+              "action": "replaceAll",
+              "text": "team name",
+              "replaceText": "={{ $json.output.recipient_info.team_name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        160
+      ],
+      "id": "12b1fb95-d624-4e3e-ac97-c9b1ef9ac24e",
+      "name": "Fill Cover Letter",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "XrKt9uwPRUF8QSUb",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "https://docs.google.com/document/d/1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc/edit?tab=t.0",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.date }}",
+              "replaceText": "=date"
+            },
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.recipient_info.address }}",
+              "replaceText": "=address"
+            },
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.salutation }}",
+              "replaceText": "=salutation"
+            },
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.body[0] }}",
+              "replaceText": "=body0"
+            },
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.body[1] }}",
+              "replaceText": "=body1"
+            },
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.body[2] }}",
+              "replaceText": "=body2"
+            },
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.body[3] }}",
+              "replaceText": "=body3"
+            },
+            {
+              "action": "replaceAll",
+              "text": "={{ $('Cover Letter Builder').item.json.output.recipient_info.team_name }}",
+              "replaceText": "team name"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        3260,
+        160
+      ],
+      "id": "bfb75834-19c1-4c2d-8243-070fd57ee979",
+      "name": "Revert Cover Letter",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "XrKt9uwPRUF8QSUb",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc",
+          "mode": "list",
+          "cachedResultName": "Raafay_Qureshi_Cover_Letter",
+          "cachedResultUrl": "https://docs.google.com/document/d/1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc/edit?usp=drivesdk"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2820,
+        160
+      ],
+      "id": "e101e4cd-b230-439f-ba14-b8e1aace000e",
+      "name": "download doc as pdf",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "qdCJxkucP0BZiURs",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "=Raafay Qureshi Cover Letter {{ $('Get Job Data').item.json['Company Name'] }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1sEsJ9cHtr4LfyRWo3ZCNYFCyiZlsro8M",
+          "mode": "list",
+          "cachedResultName": "cover letters",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1sEsJ9cHtr4LfyRWo3ZCNYFCyiZlsro8M"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3020,
+        160
+      ],
+      "id": "f5db4c87-1fba-407e-a6d1-4ac91052b98f",
+      "name": "upload pdf to drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "qdCJxkucP0BZiURs",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08",
+          "mode": "list",
+          "cachedResultName": "Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Job Description": "={{ $('Get Job Data').item.json['Job Description'] }}",
+            "Resume": "={{ $('ExportResume').item.json.data.tasks.find(task => task.name === 'export').result.files[0].url }}\n",
+            "Cover Letter": "={{ $('upload pdf to drive').item.json.webViewLink }}",
+            "Completion": "Complete"
+          },
+          "matchingColumns": [
+            "Job Description"
+          ],
+          "schema": [
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Position Title",
+              "displayName": "Position Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Job Description",
+              "displayName": "Job Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Resume",
+              "displayName": "Resume",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cover Letter",
+              "displayName": "Cover Letter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Completion",
+              "displayName": "Completion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        3480,
+        160
+      ],
+      "id": "fd48459b-bbcb-4ce2-9313-4c0eac9079e5",
+      "name": "update sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AH5EtKgwkG8miFUU",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Cover Letter\n",
+        "height": 460,
+        "width": 1840,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2020,
+        60
+      ],
+      "id": "3e67e913-a025-4292-a344-05c647795cc5",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08",
+          "mode": "list",
+          "cachedResultName": "Jobs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Completion",
+              "lookupValue": "Incomplete"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        320,
+        220
+      ],
+      "id": "9c4deaa8-97b2-4976-90b1-adacac67c9dd",
+      "name": "Get Job Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AH5EtKgwkG8miFUU",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        740,
+        160
+      ],
+      "id": "a0ef390a-d917-4d20-a71d-7ad239b2acac",
+      "name": "Merge Inputs"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Persona: You are an expert career coach and professional resume writer. Your task is to write a compelling, professional, and highly customized cover letter that makes the applicant stand out.\n\nObjective: Generate a cover letter by seamlessly integrating the applicant's qualifications from the provided JSON resume data with the specific requirements of the job description. The final output must be a single JSON object representing the structured cover letter. Make the address in the format of \"street number, street name, \" (if applicable) \"city, province\". Like 6463 colebrook crescent, Missisauga, Ontario or Toronto, Ontario if only address is included. Make the date in the format of Month Day, Year like February 17, 2005. The resume body can be a max of 285 words in the total of all body paragraphs. Try to aim for 250-275 words. Do not include a sincerely statement in output. There has to be exactly four body statements.\n\n[CONTEXT]\n\nYou will be given two pieces of information:\n\n\n\nThe Applicant's Resume Data (in JSON format): This contains the applicant's contact information, experience, skills, and education.\n\nThe Job Information: This includes the job title, company name, and the full job description or a list of key requirements and responsibilities.\n\n[TASK]\n\nDraft a formal, one-page cover letter and structure it as a JSON object. The letter must:\n\n\n\nBe Structured as JSON: The entire output must be a single JSON object. The keys should include applicantInfo, date, recipientInfo, salutation, body (as an array of strings for paragraphs), closing, and signature.\n\nCreate a Compelling Introduction: In the first paragraph, state the specific job title being applied for and where it was seen. Express genuine enthusiasm for the role and the company.\n\nAlign Experience with Job Requirements: The body paragraphs are the most critical part. Create a narrative that directly connects the applicant's past experiences and achievements (from the experience section of the resume JSON) to the requirements in the job description.\n\nAction-Oriented Language: Use strong action verbs to describe accomplishments.\n\nQuantify Achievements: Whenever the resume JSON includes quantifiable results (e.g., \"improved data retrieval times by 30%\"), you must highlight these metrics.\n\nSkill Matching: Explicitly mention 2-3 key skills from the skills section of the resume JSON that are directly relevant to the job description.\n\nDemonstrate Company Interest: Show that the applicant has researched the company. Mention something specific about the company's values, recent projects, or mission that resonates with the applicant.\n\nMaintain a Professional and Confident Tone: The language should be positive, proactive, and confident, without being arrogant.\n\nInclude a Clear Call to Action: The final paragraph should reiterate interest in the position and clearly state the applicant's desire for an interview.\n\nUse Placeholders for Missing Information: If the hiring manager's name is not provided, use a general professional salutation like \"Dear Hiring Manager,\" or \"Dear [Job Title] Team,\".\n\n\n\n[FINAL TASK]\n\nNow, using the following new data, generate a cover letter in the specified JSON format.\n\n1. JSON Resume Data:\n{{ $('formatted resume').item.json.formattedText }}\n\n2. Job Information:\n{{ $('Merge Inputs').item.json['Company Name'] }}\n{{ $('Merge Inputs').item.json['Position Title'] }}\n{{ $('Merge Inputs').item.json.Location }}\n{{ $('Merge Inputs').item.json['Job Description'] }}\n\nDate: {{ $json.date }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        160
+      ],
+      "id": "ea7ef8b0-d9d8-4ed7-9041-dc052b2160fe",
+      "name": "Cover Letter Builder"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-pro-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        360
+      ],
+      "id": "6f51cef8-32f9-49d7-b57b-05752f3f2d4b",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "SNYRHUeyNyx0g8XI",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "resume": "\\documentclass[letterpaper,11pt]{article}\n\\usepackage{latexsym}\n\\usepackage[empty]{fullpage}\n\\usepackage{titlesec}\n\\usepackage{marvosym}\n\\usepackage[usenames,dvipsnames]{color}\n\\usepackage{verbatim}\n\\usepackage{enumitem}\n\\usepackage[hidelinks]{hyperref}\n\\usepackage{fancyhdr}\n\\usepackage[english]{babel}\n\\usepackage{tabularx}\n\\input{glyphtounicode}\n\n%----------FONT OPTIONS----------\n% sans-serif\n% \\usepackage[sfdefault]{FiraSans}\n% \\usepackage[sfdefault]{roboto}\n% \\usepackage[sfdefault]{noto-sans}\n% \\usepackage[default]{sourcesanspro}\n\n% serif\n% \\usepackage{CormorantGaramond}\n% \\usepackage{charter}\n\n\\pagestyle{fancy}\n\\fancyhf{} % clear all header and footer fields\n\\fancyfoot{}\n\\renewcommand{\\headrulewidth}{0pt}\n\\renewcommand{\\footrulewidth}{0.pt}\n\n% Adjust margins\n\\addtolength{\\oddsidemargin}{-0.5in}\n\\addtolength{\\evensidemargin}{-0.5in}\n\\addtolength{\\textwidth}{1in}\n\\addtolength{\\topmargin}{-.5in}\n\\addtolength{\\textheight}{1.0in}\n\n\\urlstyle{same}\n\n\\raggedbottom\n\\raggedright\n\\setlength{\\tabcolsep}{0in}\n\n% Sections formatting\n\\titleformat{\\section}{\n  \\vspace{-4pt}\\scshape\\raggedright\\large\n}{}{0em}{}[\\color{black}\\titlerule \\vspace{-5pt}]\n\n% Ensure that generate pdf is machine readable/ATS parsable\n\\pdfgentounicode=1\n\n%-------------------------\n% Custom commands\n\\newcommand{\\resumeItem}[1]{\n  \\item\\small{\n    {#1 \\vspace{-2pt}}\n  }\n}\n\n\\newcommand{\\resumeSubheading}[4]{\n  \\vspace{-2pt}\\item\n    \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}\n      \\textbf{#1} & #2 \\\\\n      \\textit{\\small#3} & \\textit{\\small #4} \\\\\n    \\end{tabular*}\\vspace{-7pt}\n}\n\n\\newcommand{\\resumeSubSubheading}[2]{\n  \\item\n    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}\n      \\textit{\\small#1} & \\textit{\\small #2} \\\\\n    \\end{tabular*}\\vspace{-7pt}\n}\n\n\\newcommand{\\resumeProjectHeading}[2]{\n  \\item\n    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}\n      \\small\\textbf{#1} & \\textit{\\small #2} \\\\\n    \\end{tabular*}\\vspace{-7pt}\n}\n\n\\newcommand{\\resumeSubItem}[1]{\\resumeItem{#1}\\vspace{-4pt}}\n\n\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}\n\n\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}\n\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}\n\\newcommand{\\resumeItemListStart}{\\begin{itemize}}\n\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}\n%-------------------------------------------\n\n%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\\begin{document}\n\n%----------HEADING----------\n\\begin{center}\n    \\textbf{\\Huge \\scshape Raafay Qureshi} \\\\ \\vspace{1pt}\n    \\small 437-328-8886 $|$ \\href{mailto:raafay.qureshi207@gmail.com}{\\underline{raafay.qureshi207@gmail.com}} $|$ \n    \\href{https://github.com/raafay-qureshi}{\\underline{github.com/raafay-qureshi}}\n\\end{center}\n\n%-----------EDUCATION-----------\n\\section{Education}\n  \\resumeSubHeadingListStart\n    \\resumeSubheading\n      {Wilfrid Laurier University}{Waterloo, ON}\n      {Bachelor of Computer Science}{Sep. 2023 -- Apr. 2027}\n      \\resumeItemListStart\n        \\resumeItem{\\textbf{Relevant Coursework:} Data Structures I \\& II, Object-Oriented Programming, Intro to Programming, Discrete Structures, Software Engineering, Intro to Microprocessors}\n      \\resumeItemListEnd\n  \\resumeSubHeadingListEnd\n\n%-----------PROJECTS-----------\n\\section{Technical Projects}\n  \\resumeSubHeadingListStart\n    \\resumeProjectHeading\n      {\\textbf{AI-Powered Resume \\& Cover Letter Agent} $|$ \\emph{Python, n8n.io, Google Gemini API, LaTeX}}{May 2024 -- Present}\n      \\resumeItemListStart\n        \\resumeItem{Architected an automated workflow using n8n.io to parse job descriptions and align them with a master resume, significantly reducing application customization time.}\n        \\resumeItem{Integrated with Google's Gemini API to dynamically rewrite and tailor resume bullet points, ensuring optimal keyword alignment for ATS scans.}\n        \\resumeItem{Engineered a system to generate complete, formatted cover letters in JSON, tailored to specific company values and job requirements.}\n      \\resumeItemListEnd\n    \\resumeProjectHeading\n      {\\textbf{NewsNest} $|$ \\emph{HTML, CSS, JavaScript, Node.js, MongoDB}}{May 2024}\n      \\resumeItemListStart\n        \\resumeItem{Developed a full-stack web application for an infinite-scroll news feed, using Node.js and MongoDB for a robust backend architecture.}\n        \\resumeItem{Implemented secure user authentication and personalized news feeds based on user-selected interests for a tailored content experience.}\n        \\resumeItem{Designed the MongoDB schema to efficiently store and retrieve user preferences and news articles for personalization.}\n      \\resumeItemListEnd\n    \\resumeProjectHeading\n        {\\textbf{Gaia: Environmental Awareness App} $|$ \\emph{Swift, Xcode, UIKit}}{July 2022}\n        \\resumeItemListStart\n            \\resumeItem{Co-developed a sustainability-focused iOS app during the Our Wave Hub Hackathon, from initial concept to final presentation.}\n            \\resumeItem{Utilized UIKit to build a responsive and intuitive interface for displaying environmental data and tips.}\n        \\resumeItemListEnd\n    \\resumeProjectHeading\n        {\\textbf{Product Inventory Discord Bot} $|$ \\emph{JavaScript, Discord.js, Node.js}}{March 2022}\n        \\resumeItemListStart\n            \\resumeItem{Developed a Discord bot using Discord.js to allow users to track product inventory and availability via custom commands.}\n            \\resumeItem{Managed real-time command handling and API integration, enabling users to interact with the bot seamlessly.}\n        \\resumeItemListEnd\n  \\resumeSubHeadingListEnd\n\n%-----------EXPERIENCE-----------\n\\section{Experience}\n  \\resumeSubHeadingListStart\n    \\resumeSubheading\n      {Apple Inc.}{Mississauga, ON}\n      {Software Developer Intern (High School Co-op)}{Nov. 2021 -- Feb. 2022}\n      \\resumeItemListStart\n        \\resumeItem{Selected through the competitive Specialist High Skills Major (SHSM) program for a high school internship.}\n        \\resumeItem{Architected and developed a full-featured recipe iOS application using Swift and Xcode, integrating a public API to fetch and manage over 300 recipes.}\n        \\resumeItem{Designed and implemented RESTful API endpoints for categorized browsing, ingredient lists, and step-by-step instructions.}\n        \\resumeItem{Enabled complete offline functionality by persisting data locally using CoreData, significantly improving user accessibility.}\n        \\resumeItem{Implemented a save and favorite feature, preventing duplicate entries and enhancing user convenience.}\n        \\resumeItem{Integrated SwiftUI to modernize the app’s design and improve the user interface.}\n        \\resumeItem{Presented the final product to a panel of Apple judges, receiving positive feedback for innovation and technical execution.}\n      \\resumeItemListEnd\n  \\resumeSubHeadingListEnd\n\n%-----------PROGRAMMING SKILLS-----------\n\\section{Technical Skills}\n \\begin{itemize}[leftmargin=0.15in, label={}]\n    \\small{\\item{\n     \\textbf{Languages:}{ Python, Java, JavaScript, Swift, C, R, HTML/CSS} \\\\\n     \\textbf{Frameworks \\& Libraries:}{ React, Node.js, SwiftUI, CoreData, Discord.js, Google Gemini API} \\\\\n     \\textbf{Developer Tools:}{ Git, GitHub, Xcode, VS Code, MongoDB, n8n.io, Unreal Engine 5}\n    }}\n \\end{itemize}\n%-------------------------------------------\n\\end{document}\n"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Get Job Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Resume Builder",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Builder": {
+      "main": [
+        [
+          {
+            "node": "formatted resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "ExportResume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateResume": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExportResume": {
+      "main": [
+        [
+          {
+            "node": "get date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Cover Letter Builder",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format job desc": {
+      "main": [
+        [
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "formatted resume": {
+      "main": [
+        [
+          {
+            "node": "CreateResume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get date": {
+      "main": [
+        [
+          {
+            "node": "Cover Letter Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "download doc as pdf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revert Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "update sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download doc as pdf": {
+      "main": [
+        [
+          {
+            "node": "upload pdf to drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload pdf to drive": {
+      "main": [
+        [
+          {
+            "node": "Revert Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job Data": {
+      "main": [
+        [
+          {
+            "node": "format job desc",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Inputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Inputs": {
+      "main": [
+        [
+          {
+            "node": "Resume Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cover Letter Builder": {
+      "main": [
+        [
+          {
+            "node": "Fill Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Cover Letter Builder",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a4b77480-f324-4a26-a9d3-da589377e6ea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "75d3a4d5d18d32f18e9c19d6ac2fbb2aa0a11b23ddee1bc02c6d5cbae883cc9f"
+  },
+  "id": "v8oVE7ZxNgHBpOK6",
+  "tags": []
+}
