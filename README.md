@@ -37,7 +37,7 @@ To get this project running, you will need to import the workflow into your own 
 
 ```bash
 git clone [https://github.com/Raafay-Qureshi/AIResumeAgent.git](https://github.com/Raafay-Qureshi/AIResumeAgent.git)
-cd ai-resume-agent
+cd AIResumeAgent
 ```
 
 **2. Import the Workflow:**
