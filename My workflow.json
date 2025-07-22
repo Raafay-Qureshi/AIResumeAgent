@@ -179,7 +179,7 @@
     {
       "parameters": {
         "operation": "update",
-        "documentURL": "https://docs.google.com/document/d/1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc/edit?tab=t.0",
+        "documentURL": "",
         "actionsUi": {
           "actionFields": [
             {
@@ -243,7 +243,7 @@
     {
       "parameters": {
         "operation": "update",
-        "documentURL": "https://docs.google.com/document/d/1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc/edit?tab=t.0",
+        "documentURL": "",
         "actionsUi": {
           "actionFields": [
             {
@@ -312,7 +312,7 @@
           "value": "1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc",
           "mode": "list",
           "cachedResultName": "Raafay_Qureshi_Cover_Letter",
-          "cachedResultUrl": "https://docs.google.com/document/d/1HIjbMEN9Plzap_K5R9xwRgFBGAM24nRpL9Qb8GP0HSc/edit?usp=drivesdk"
+          "cachedResultUrl": ""
         },
         "options": {
           "googleFileConversion": {
@@ -377,14 +377,14 @@
           "value": "1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08",
           "mode": "list",
           "cachedResultName": "Jobs",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit?usp=drivesdk"
+          "cachedResultUrl": ""
         },
         "sheetName": {
           "__rl": true,
           "value": "gid=0",
           "mode": "list",
           "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit#gid=0"
+          "cachedResultUrl": ""
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -519,14 +519,14 @@
           "value": "1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08",
           "mode": "list",
           "cachedResultName": "Jobs",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit?usp=drivesdk"
+          "cachedResultUrl": ""
         },
         "sheetName": {
           "__rl": true,
           "value": "gid=0",
           "mode": "list",
           "cachedResultName": "Sheet1",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lB9KA3Qh17qEGRw3QGFJrkSqPICzdh4Zp2jQj7axs08/edit#gid=0"
+          "cachedResultUrl": ""
         },
         "filtersUI": {
           "values": [
