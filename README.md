@@ -36,7 +36,7 @@ To get this project running, you will need to import the workflow into your own 
 **1. Clone the Repository:**
 
 ```bash
-git clone [https://github.com/your-username/ai-resume-agent.git](https://github.com/your-username/ai-resume-agent.git)
+git clone [https://github.com/Raafay-Qureshi/AIResumeAgent.git](https://github.com/Raafay-Qureshi/AIResumeAgent.git)
 cd ai-resume-agent
 ```
 
